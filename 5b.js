@@ -10665,7 +10665,7 @@ function getCurrentExploreUserID() {
 
 function getExploreUserPage(id, p, t, s) {
 	requestAdded();
-	return fetch('https://5beam.zelo.dev/api/user/page?id=' + id + '&page=' + Math.ceil(p) + '&type=' + t + '&sort=' + s, {method: 'GET'})
+	return fetch('https://5beam.zelo.dev/api/user/page?id=' + id + '&page=' + Math.ceil(p) + '&type=' + t + '&sort=' + s + '&amount=4', {method: 'GET'})
 		.then(async response => {
 			exploreUserPageLevels[t] = await response.json();
 			if (p % 1 === 0) exploreUserPageLevels[t] = exploreUserPageLevels[t].slice(4,8);
