@@ -2652,7 +2652,7 @@ function exploreMoreByThisUser() {
 	menuScreen = 8;
 	// getExploreUser(exploreLevelPageLevel.creator.id);
 	exploreUser = exploreLevelPageLevel.creator;
-	setExploreUserPage(0, 0.5).then(() => setExploreUserPage(1, 0.5))
+	setExploreUserPage(0, 1).then(() => setExploreUserPage(1, 1))
 }
 
 function setExploreUserPage(type, page) {
@@ -10000,7 +10000,7 @@ function draw() {
 					else if (onRect(_xmouse, _ymouse, 15, y + 60, 25, 30)) {
 						ctx.fillStyle = '#cccccc';
 						onButton = true;
-						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] - 0.5);
+						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] - 1);
 					} else ctx.fillStyle = '#999999';
 					drawArrow(15, y + 60, 25, 30, 3);
 
@@ -10009,7 +10009,7 @@ function draw() {
 					else if (onRect(_xmouse, _ymouse, 920, y + 60, 25, 30)) {
 						ctx.fillStyle = '#cccccc';
 						onButton = true;
-						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] + 0.5);
+						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] + 1);
 					} else ctx.fillStyle = '#999999';
 					drawArrow(920, y + 60, 25, 30, 1);
 
@@ -10666,11 +10666,9 @@ function getCurrentExploreUserID() {
 
 function getExploreUserPage(id, p, t, s) {
 	requestAdded();
-	return fetch('https://5beam.zelo.dev/api/user/page?id=' + id + '&page=' + Math.ceil(p) + '&type=' + t + '&sort=' + s + '&amount=4', {method: 'GET'})
+	return fetch('https://5beam.zelo.dev/api/user/page?id=' + id + '&page=' + p + '&type=' + t + '&sort=' + s + '&amount=4', {method: 'GET'})
 		.then(async response => {
 			exploreUserPageLevels[t] = await response.json();
-			if (p % 1 === 0) exploreUserPageLevels[t] = exploreUserPageLevels[t].slice(4,8);
-			else exploreUserPageLevels[t] = exploreUserPageLevels[t].slice(0,4);
 			if (t === 0) setExploreThumbsUserPage(t);
 			truncateLevelTitles(exploreUserPageLevels[t],t*4);
 			requestResolved();
