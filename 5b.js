@@ -2029,7 +2029,7 @@ let exploreDescLine = 0;
 let previousMenuExplore = 0;
 let exploreUser;
 let exploreUserPageNumbers = [];
-let exploreSortText = ['new','old','plays','trending'];
+let exploreSortText = ['new','trending','plays','old'];
 let exploreSortTextWidth = 160;
 let loggedInExploreUser5beamID = -1; // Temporarily just being used for checking if the user is logged in.
 let exploreLevelTitlesTruncated = new Array(8);
@@ -2250,6 +2250,11 @@ async function loadingScreen() {
 
 	req = await fetch('data/images6.json');
 	let resourceData = await req.json();
+
+	// 5beam
+	svg5beamStars = await createImage(resourceData['5beam/stars.svg']);
+	svg5beamPlays = await createImage(resourceData['5beam/plays.svg']);
+	svg5beamLevels = await createImage(resourceData['5beam/levels.svg']);
 
 	svgCSBubble = await createImage(resourceData['ui/csbubble/dia.svg']);
 	svgHPRCCrank = await createImage(resourceData['entities/e0035crank.svg']);
@@ -2652,13 +2657,25 @@ function exploreMoreByThisUser() {
 	menuScreen = 8;
 	// getExploreUser(exploreLevelPageLevel.creator.id);
 	exploreUser = exploreLevelPageLevel.creator;
-	setExploreUserPage(0, 0.5).then(() => setExploreUserPage(1, 0.5))
+	setExploreUserPage(0, 1).then(() => setExploreUserPage(1, 1))
 }
 
 function setExploreUserPage(type, page) {
 	// exploreLevelTitlesTruncated = new Array(8);
 	exploreUserPageNumbers[type] = page;
 	return getExploreUserPage(exploreUser.id, exploreUserPageNumbers[type], type, 0);
+}
+
+async function exploreStarLevel() {
+	const { starred } = await postExploreStarLevel(exploreLevelPageLevel.id);
+	exploreLevelPageLevel.starred = starred;
+	exploreLevelPageLevel.stars += starred ? 1 : -1;
+}
+
+async function exploreStarLevelpack() {
+	const { starred } = await postExploreStarLevelpack(exploreLevelPageLevel.id);
+	exploreLevelPageLevel.starred = starred;
+	exploreLevelPageLevel.stars += starred ? 1 : -1;
 }
 
 function menu2Back() {
@@ -6962,7 +6979,9 @@ function drawExploreLevel(x, y, i, levelType, pageType) {
 		ctx.fillStyle = '#333333';
 	}
 
-	ctx.fillRect(x, y, 208, 155);
+	ctx.beginPath();
+	ctx.roundRect(x, y, 208, 155, 3);
+	ctx.fill();
 	// ctx.fillStyle = '#cccccc';
 	// ctx.fillRect(x+8, y+8, 192, 108);
 	if (levelType == 0) ctx.drawImage(thumbs[i], x + 8, y + 8, 192, 108);
@@ -6984,17 +7003,17 @@ function drawExploreLevel(x, y, i, levelType, pageType) {
 		ctx.fillText('by ' + username, x + 7, y + 138.3);
 
 
-		// Views icon & counter
+		// Plays icon & counter
+		ctx.drawImage(svg5beamPlays, x + 165, y + 139, 10, 10);
+		ctx.drawImage(svg5beamStars, x + 190, y + 139, 10, 10);
 		ctx.fillStyle = '#47cb46';
-		ctx.beginPath();
-		ctx.moveTo(x + 194, y + 137.3);
-		ctx.lineTo(x + 189, y + 146.3);
-		ctx.lineTo(x + 199, y + 146.3);
-		ctx.closePath();
-		ctx.fill();
-
 		ctx.textAlign = "right";
-		ctx.fillText(thisExploreLevel.plays, x + 186, y + 138.3);
+		ctx.fillText(thisExploreLevel.plays, x + 163, y + 140);
+		ctx.textAlign = "left";
+		
+		ctx.fillStyle = '#ffe000';
+		ctx.textAlign = "right";
+		ctx.fillText(thisExploreLevel.stars, x + 188, y + 140);
 		ctx.textAlign = "left";
 	}
 
@@ -9645,6 +9664,7 @@ function draw() {
 			ctx.textBaseline = 'middle';
 			let tabx = 28;
 			for (let i = 0; i < exploreTabWidths.length; i++) {
+				ctx.beginPath();
 				if (i == exploreTab) ctx.fillStyle = '#666666';
 				else if (onRect(_xmouse, _ymouse, tabx, 20, exploreTabWidths[i], 45)) {
 					ctx.fillStyle = '#b3b3b3';
@@ -9655,7 +9675,8 @@ function draw() {
 						setExplorePage(1);
 					}
 				} else ctx.fillStyle = '#999999';
-				ctx.fillRect(tabx, 20, exploreTabWidths[i], 45);
+				ctx.roundRect(tabx, 20, exploreTabWidths[i], 45, [10, 10, 0, 0]);
+				ctx.fill();
 				ctx.fillStyle = '#ffffff';
 				ctx.fillText(exploreTabNames[i], tabx + exploreTabWidths[i] / 2, 45);
 				// exploreTabNames[i];
@@ -9667,7 +9688,7 @@ function draw() {
 				drawExploreLoadingText();
 			} else {
 				for (let i = 0; i < explorePageLevels.length; i++) {
-					drawExploreLevel(232 * (i % 4) + 28, Math.floor(i / 4) * 182 + (exploreTab==2?140:130), i, exploreTab==1?1:0, 0);
+					drawExploreLevel(232 * (i % 4) + 28, Math.floor(i / 4) * 175 + (exploreTab==2?140:130), i, exploreTab==1?1:0, 0);
 				}
 			}
 
@@ -9693,8 +9714,9 @@ function draw() {
 			}
 
 			if (exploreTab != 2) { // Sort and pages aren't supported for search yet
+				ctx.beginPath();
 				// Sort by
-				if (onRect(_xmouse, _ymouse, 902-exploreSortTextWidth, 85, exploreSortTextWidth+30, 30)) {
+				if (onRect(_xmouse, _ymouse, 565, 85, exploreSortTextWidth+30, 30)) {
 					ctx.fillStyle = '#404040';
 					onButton = true;
 					if (mouseIsDown && !pmouseIsDown) {
@@ -9702,8 +9724,11 @@ function draw() {
 						setExplorePage(1);
 					}
 				} else ctx.fillStyle = '#333333';
-				ctx.fillRect(902-exploreSortTextWidth, 85, exploreSortTextWidth+30, 30);
-				if (onRect(_xmouse, _ymouse, 565, 85, exploreSortTextWidth+10, 30)) {
+				ctx.roundRect(565, 85, exploreSortTextWidth+10, 30, 5);
+				ctx.fill();
+				
+				ctx.beginPath();
+				if (onRect(_xmouse, _ymouse, 902-exploreSortTextWidth, 85, exploreSortTextWidth+10, 30)) {
 					ctx.fillStyle = '#404040';
 					onButton = true;
 					if (mouseIsDown && !pmouseIsDown) {
@@ -9712,13 +9737,17 @@ function draw() {
 						getDaily()
 					}
 				} else ctx.fillStyle = '#333333';
-				ctx.fillRect(565, 85, exploreSortTextWidth+10, 30);
+				ctx.roundRect(902-exploreSortTextWidth, 85, exploreSortTextWidth+30, 30, 5);
+
+				ctx.fill();
 				ctx.textBaseline = 'top';
 				ctx.textAlign = 'left';
 				ctx.fillStyle = '#ffffff';
 				ctx.font = '24px Helvetica';
-				ctx.fillText('Sort by: ' + exploreSortText[exploreSort], 902-exploreSortTextWidth + 5, 88);
-				ctx.fillText('Play the Daily!', 570, 88);
+
+				let sortingText = exploreSortText[exploreSort][0].toLocaleUpperCase() + exploreSortText[exploreSort].slice(1)
+				ctx.fillText(sortingText, 570, 88);
+				ctx.fillText('Play the Daily!', 902-exploreSortTextWidth + 5, 88);
 			}
 			// Page number
 			ctx.fillStyle = '#ffffff';
@@ -9841,13 +9870,22 @@ function draw() {
 					}
 				}
 
-				// Views icon & counter
+				// Plays counter
 				ctx.fillStyle = '#47cb46';
 				ctx.font = 'bold 18px Helvetica';
 				ctx.textAlign = 'right';
 
-				let pluralViewText = exploreLevelPageLevel.plays === 1
-				ctx.fillText(exploreLevelPageLevel.plays + (pluralViewText ? ' play' : ' plays'), 410, 325);
+				let pluralPlayText = exploreLevelPageLevel.plays === 1
+				ctx.fillText(exploreLevelPageLevel.plays + (pluralPlayText ? ' play' : ' plays'), 410, 325);
+				ctx.textAlign = 'left';
+
+				// Stars counter
+				ctx.fillStyle = '#ffe000';
+				ctx.font = 'bold 18px Helvetica';
+				ctx.textAlign = 'right';
+
+				let pluralStarText = exploreLevelPageLevel.stars === 1
+				ctx.fillText(exploreLevelPageLevel.stars + (pluralStarText ? ' star' : ' stars'), 410, 352);
 				ctx.textAlign = 'left';
 
 				// Difficulty in levelpacks arent supported yet
@@ -9901,6 +9939,11 @@ function draw() {
 
 				if (!isGuest) {
 					drawSimpleButton('More By This User', exploreMoreByThisUser, 226, 417, 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
+				}
+
+				if (loggedInExploreUser5beamID !== -1) {
+					const starred = exploreLevelPageLevel.starred;
+					drawSimpleButton(starred ? 'Unstar' : 'Star', exploreLevelPageType ? exploreStarLevelpack : exploreStarLevel, 30, exploreLevelPageType ? 455 : 417 , 188, 30, 3, '#ffffff', '#404040', '#808080', '#808080');
 				}
 
 				if (exploreLevelPageType != 1 && loggedInExploreUser5beamID === exploreLevelPageLevel.creator.id) {
@@ -10000,7 +10043,7 @@ function draw() {
 					else if (onRect(_xmouse, _ymouse, 15, y + 60, 25, 30)) {
 						ctx.fillStyle = '#cccccc';
 						onButton = true;
-						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] - 0.5);
+						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] - 1);
 					} else ctx.fillStyle = '#999999';
 					drawArrow(15, y + 60, 25, 30, 3);
 
@@ -10009,7 +10052,7 @@ function draw() {
 					else if (onRect(_xmouse, _ymouse, 920, y + 60, 25, 30)) {
 						ctx.fillStyle = '#cccccc';
 						onButton = true;
-						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] + 0.5);
+						if (mouseIsDown && !pmouseIsDown) setExploreUserPage(j, exploreUserPageNumbers[j] + 1);
 					} else ctx.fillStyle = '#999999';
 					drawArrow(920, y + 60, 25, 30, 1);
 
@@ -10560,7 +10603,18 @@ function getAuthHeader() {
 
 function getExplorePage(p, t, s) {
 	requestAdded();
-	return fetch('https://5beam.zelo.dev/api/page' + (s == 3 ? "/trending?sort=" + 0 : "?sort=" + s) + "&page=" + p  + '&type=' + t, {method: 'GET'})
+	// ZELO TODO: Intergrate trending with regular page API so you don't have to do this
+	// ZELO TODO: ALSO, PLAYS AND OLD IS SWAPPED... FIX THAT IN 5BEAM... then fix it again in HTML5b
+	let url = "https://5beam.zelo.dev/api/page"
+	switch (s) {
+		case 0: url += "?sort=0"; break;
+		case 1: url += "/trending?sort=0"; break;
+		case 2: url += "?sort=2"; break;
+		case 3: url += "?sort=1"; break;
+		default:
+			throw new Error("Invalid sort: " + s)
+	}
+	return fetch(url + "&page=" + p  + '&type=' + t, {method: 'GET'})
 		.then(async response => {
 			explorePageLevels = await response.json();
 			if (exploreTab == 0) setExploreThumbs();
@@ -10666,11 +10720,9 @@ function getCurrentExploreUserID() {
 
 function getExploreUserPage(id, p, t, s) {
 	requestAdded();
-	return fetch('https://5beam.zelo.dev/api/user/page?id=' + id + '&page=' + Math.ceil(p) + '&type=' + t + '&sort=' + s + '&amount=4', {method: 'GET'})
+	return fetch('https://5beam.zelo.dev/api/user/page?id=' + id + '&page=' + p + '&type=' + t + '&sort=' + s + '&amount=4', {method: 'GET'})
 		.then(async response => {
 			exploreUserPageLevels[t] = await response.json();
-			if (p % 1 === 0) exploreUserPageLevels[t] = exploreUserPageLevels[t].slice(4,8);
-			else exploreUserPageLevels[t] = exploreUserPageLevels[t].slice(0,4);
 			if (t === 0) setExploreThumbsUserPage(t);
 			truncateLevelTitles(exploreUserPageLevels[t],t*4);
 			requestResolved();
@@ -10766,6 +10818,37 @@ async function postExploreModifyLevel(id, title, desc, difficulty, file) {
 			cancelEditExploreLevel();
 		});
 }
+
+/** @return {Promise<{starred: boolean}>} */
+async function postExploreStarLevel(id) {
+	requestAdded();
+
+	try {
+		const response = await fetch('https://5beam.zelo.dev/api/level/star?id=' + id, {method: 'POST', headers: getAuthHeader()});
+		requestResolved();
+		return await response.json();
+	} catch (err) {
+		console.log(err);
+		setLCMessage(`${response.status} Sadly we're unable to un/star this level. Please try again later!`);
+		requestError();
+	}
+}
+
+/** @return {Promise<{starred: boolean}>} */
+async function postExploreStarLevelpack(id) {
+	requestAdded();
+
+	try {
+		const response = await fetch('https://5beam.zelo.dev/api/levelpack/star?id=' + id, {method: 'POST', headers: getAuthHeader()});
+		requestResolved();
+		return await response.json();
+	} catch (err) {
+		console.log(err);
+		setLCMessage(`${response.status} Sadly we're unable to un/star this levelpack. Please try again later!`);
+		requestError();
+	}
+}
+
 
 // Before, this was in a separate file like it was in the Flash version, but it made minifying take more steps and I didn't really edit it that often, so I decided it was just easier to move it into the same file.
 class Character {
